@@ -9,7 +9,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using ServiceBusQueueAPI.Events;
 using ServiceBusQueueAPI.Events.EventHandlers;
-using ServiceBusQueueAPI.Events.Publisher;
 using System.Collections.Generic;
 
 namespace ServiceBusQueueAPI
@@ -38,7 +37,6 @@ namespace ServiceBusQueueAPI
 
         private void RegisterServices(IServiceCollection services)
         {
-            services.AddTransient<IEventPublisherService, EventPublisherService>();
             services.AddSingleton<IEventBusSubscriptionsManager, EventBusSubscriptionsManager>();
             services.AddSingleton<IEventBusService, EventBusService>();
             services.AddSingleton<IEventConsumerService, EventConsumerService>();

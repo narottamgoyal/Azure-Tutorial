@@ -10,9 +10,9 @@ namespace ServiceBusQueueAPI.Events.EventHandlers
 
         }
 
-        public async Task HandleAsync(SampleDemoEvent @event)
+        public Task HandleAsync(SampleDemoEvent @event)
         {
-
+            return Task.CompletedTask;
         }
     }
 }

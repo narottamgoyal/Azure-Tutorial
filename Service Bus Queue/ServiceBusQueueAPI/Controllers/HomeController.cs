@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using BasicEventBus.Contracts;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ServiceBusQueueAPI.Events;
-using ServiceBusQueueAPI.Events.Publisher;
 
 namespace ServiceBusQueueAPI.Controllers
 {
@@ -9,17 +9,17 @@ namespace ServiceBusQueueAPI.Controllers
     [Route("[controller]")]
     public class HomeController : ControllerBase
     {
-        private readonly IEventPublisherService eventPublisherService;
+        private readonly IEventBusService eventBusService;
 
-        public HomeController(IEventPublisherService eventPublisherService)
+        public HomeController(IEventBusService eventPublisherService)
         {
-            this.eventPublisherService = eventPublisherService;
+            this.eventBusService = eventPublisherService;
         }
 
         [HttpPost("username")]
         public IActionResult Post(string username)
         {
-            eventPublisherService.PublishMessageAsync<SampleDemoEvent>(
+            eventBusService.Publish<SampleDemoEvent>(
                 new SampleDemoEvent
                 {
                     Message = username
