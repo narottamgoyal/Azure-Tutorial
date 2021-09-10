@@ -12,10 +12,10 @@ namespace ServiceBusQueueAPI.Events.Publisher
 
     public class EventPublisherService : IEventPublisherService
     {
-        private readonly string ConnectionString = "Endpoint=sb://ngtestsb2.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=6qE0gKKXeLOlGCmC/T1YfcwIvd2/nnHxt3Kj7diEGkQ=";
+        private readonly string ConnectionString = "";
         public async Task PublishMessageAsync<T>(T eventMessage)
         {
-            var queueClient = new QueueClient(ConnectionString, eventMessage.GetType().Name);
+            var queueClient = new QueueClient(ConnectionString, typeof(T).FullName);
             string messageBody = JsonSerializer.Serialize(eventMessage);
             var message = new Message(Encoding.UTF8.GetBytes(messageBody));
 

@@ -1,12 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using ServiceBusQueueAPI.Events;
 using ServiceBusQueueAPI.Events.Publisher;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace ServiceBusQueueAPI.Controllers
 {
@@ -24,10 +19,10 @@ namespace ServiceBusQueueAPI.Controllers
         [HttpPost("username")]
         public IActionResult Post(string username)
         {
-            eventPublisherService.PublishMessageAsync<MyFirstQueue>(
-                new MyFirstQueue
+            eventPublisherService.PublishMessageAsync<SampleDemoEvent>(
+                new SampleDemoEvent
                 {
-                    Name = username
+                    Message = username
                 });
             return StatusCode(StatusCodes.Status200OK);
         }

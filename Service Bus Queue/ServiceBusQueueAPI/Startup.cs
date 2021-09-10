@@ -1,16 +1,16 @@
+using AzureEventServiceBus;
+using BasicEventBus;
+using BasicEventBus.Contracts;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using ServiceBusQueueAPI.Events;
+using ServiceBusQueueAPI.Events.EventHandlers;
 using ServiceBusQueueAPI.Events.Publisher;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace ServiceBusQueueAPI
 {
@@ -32,7 +32,26 @@ namespace ServiceBusQueueAPI
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ServiceBusQueueAPI", Version = "v1" });
             });
+            RegisterServices(services);
+            AddEventHandlers(services);
+        }
+
+        private void RegisterServices(IServiceCollection services)
+        {
             services.AddTransient<IEventPublisherService, EventPublisherService>();
+            services.AddSingleton<IEventBusSubscriptionsManager, EventBusSubscriptionsManager>();
+            services.AddSingleton<IEventBusService, EventBusService>();
+            services.AddSingleton<IEventConsumerService, EventConsumerService>();
+            services.AddSingleton<IHostedService>(sp =>
+            {
+                var baseEventServiceBus = sp.GetRequiredService<IEventConsumerService>();
+                return new HostedBackgroundService(baseEventServiceBus, GetEventOrQueueNames());
+            });
+        }
+
+        private List<string> GetEventOrQueueNames()
+        {
+            return new List<string> { typeof(SampleDemoEvent).FullName };
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -45,6 +64,8 @@ namespace ServiceBusQueueAPI
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ServiceBusQueueAPI v1"));
             }
 
+            ConfigureEventBus(app);
+
             app.UseRouting();
 
             app.UseAuthorization();
@@ -53,6 +74,17 @@ namespace ServiceBusQueueAPI
             {
                 endpoints.MapControllers();
             });
+        }
+
+        private void ConfigureEventBus(IApplicationBuilder app)
+        {
+            var eventBus = app.ApplicationServices.GetRequiredService<IEventBusService>();
+            eventBus.Subscribe<SampleDemoEvent, SampleDemoEventHandler>();
+        }
+
+        public void AddEventHandlers(IServiceCollection services)
+        {
+            services.AddTransient<SampleDemoEventHandler>();
         }
     }
 }
