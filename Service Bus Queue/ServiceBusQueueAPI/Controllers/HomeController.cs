@@ -17,12 +17,12 @@ namespace ServiceBusQueueAPI.Controllers
         }
 
         [HttpPost("username")]
-        public IActionResult Post(string username)
+        public IActionResult Post(string message)
         {
             eventBusService.Publish<SampleDemoEvent>(
                 new SampleDemoEvent
                 {
-                    Message = username
+                    Message = message
                 });
             return StatusCode(StatusCodes.Status200OK);
         }

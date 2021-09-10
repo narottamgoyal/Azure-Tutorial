@@ -35,23 +35,6 @@ namespace ServiceBusQueueAPI
             AddEventHandlers(services);
         }
 
-        private void RegisterServices(IServiceCollection services)
-        {
-            services.AddSingleton<IEventBusSubscriptionsManager, EventBusSubscriptionsManager>();
-            services.AddSingleton<IEventBusService, EventBusService>();
-            services.AddSingleton<IEventConsumerService, EventConsumerService>();
-            services.AddSingleton<IHostedService>(sp =>
-            {
-                var baseEventServiceBus = sp.GetRequiredService<IEventConsumerService>();
-                return new HostedBackgroundService(baseEventServiceBus, GetEventOrQueueNames());
-            });
-        }
-
-        private List<string> GetEventOrQueueNames()
-        {
-            return new List<string> { typeof(SampleDemoEvent).FullName };
-        }
-
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
@@ -74,6 +57,20 @@ namespace ServiceBusQueueAPI
             });
         }
 
+        #region Event Consumer
+
+        private void RegisterServices(IServiceCollection services)
+        {
+            services.AddSingleton<IEventBusSubscriptionsManager, EventBusSubscriptionsManager>();
+            services.AddSingleton<IEventBusService, EventBusService>();
+            services.AddSingleton<IEventConsumerService, EventConsumerService>();
+            services.AddSingleton<IHostedService>(sp =>
+            {
+                var baseEventServiceBus = sp.GetRequiredService<IEventConsumerService>();
+                return new HostedBackgroundService(baseEventServiceBus, GetEventOrQueueNames());
+            });
+        }
+
         private void ConfigureEventBus(IApplicationBuilder app)
         {
             var eventBus = app.ApplicationServices.GetRequiredService<IEventBusService>();
@@ -84,5 +81,12 @@ namespace ServiceBusQueueAPI
         {
             services.AddTransient<SampleDemoEventHandler>();
         }
+
+        private List<string> GetEventOrQueueNames()
+        {
+            return new List<string> { typeof(SampleDemoEvent).FullName };
+        }
+
+        #endregion Event Consumer
     }
 }
