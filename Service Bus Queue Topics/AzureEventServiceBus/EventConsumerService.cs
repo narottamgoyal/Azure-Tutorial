@@ -45,8 +45,8 @@ namespace AzureEventServiceBus
             _processors.Add(processors);
 
             var ruleProperties = await GetRuleProperties(SubscriptionNames.weekend.ToString());
-            await RemoveDefaultFilters(SubscriptionNames.weekend.ToString(), ruleProperties);
-            await AddFilterToWeekend(SubscriptionNames.weekend.ToString(), ruleProperties);
+            await RemoveFilters(SubscriptionNames.weekend.ToString(), ruleProperties);
+            await AddFilterToWeekend(SubscriptionNames.weekend.ToString());
         }
 
         public async Task RegisterWeekdaySubscriptionAsync()
@@ -60,8 +60,8 @@ namespace AzureEventServiceBus
             await processors.StartProcessingAsync();
             _processors.Add(processors);
             var ruleProperties = await GetRuleProperties(SubscriptionNames.weekday.ToString());
-            await RemoveDefaultFilters(SubscriptionNames.weekday.ToString(), ruleProperties);
-            await AddFilterToWeekday(SubscriptionNames.weekday.ToString(), ruleProperties);
+            await RemoveFilters(SubscriptionNames.weekday.ToString(), ruleProperties);
+            await AddFilterToWeekday(SubscriptionNames.weekday.ToString());
         }
 
         private async Task<List<RuleProperties>> GetRuleProperties(string subscriptionName)
@@ -80,7 +80,7 @@ namespace AzureEventServiceBus
             return null;
         }
 
-        private async Task AddFilterToWeekend(string subscriptionName, List<RuleProperties> ruleProperties)
+        private async Task AddFilterToWeekend(string subscriptionName)
         {
             //var customKeyValueFilter = new CorrelationRuleFilter();
             //customKeyValueFilter.ApplicationProperties["Day"] = "Saturday";
@@ -93,7 +93,7 @@ namespace AzureEventServiceBus
             await _adminClient.CreateRuleAsync(Constants.TopicName, subscriptionName, createRuleOptions);
         }
 
-        private async Task AddFilterToWeekday(string subscriptionName, List<RuleProperties> ruleProperties)
+        private async Task AddFilterToWeekday(string subscriptionName)
         {
             //var customKeyValueFilter = new CorrelationRuleFilter();
             //customKeyValueFilter.ApplicationProperties["Day"] = "Saturday";
@@ -106,13 +106,13 @@ namespace AzureEventServiceBus
             await _adminClient.CreateRuleAsync(Constants.TopicName, subscriptionName, createRuleOptions);
         }
 
-        private async Task RemoveDefaultFilters(string subscriptionName, List<RuleProperties> ruleProperties)
+        private async Task RemoveFilters(string subscriptionName, List<RuleProperties> ruleProperties)
         {
             try
             {
-                foreach (var rule in ruleProperties) //CreateRuleOptions.DefaultRuleName
+                foreach (var rule in ruleProperties)
                 {
-                    await _adminClient.DeleteRuleAsync(Constants.TopicName, subscriptionName, rule.Name);
+                    await _adminClient.DeleteRuleAsync(Constants.TopicName, subscriptionName, rule.Name); // CreateRuleOptions.DefaultRuleName
                 }
             }
             catch (Exception ex)

@@ -75,7 +75,9 @@ namespace ServiceBusTopicsAPI
         private void BindAzureTopicSubscription(IApplicationBuilder app)
         {
             var eventBus = app.ApplicationServices.GetRequiredService<IEventBusService>();
+
             eventBus.Subscribe<TodoTaskCreatedEvent, WeekdaySubscriptionHandler>(SubscriptionNames.weekday.ToString());
+
             eventBus.Subscribe<TodoTaskCreatedEvent, WeekendSubscriptionHandler>(SubscriptionNames.weekend.ToString());
         }
 
