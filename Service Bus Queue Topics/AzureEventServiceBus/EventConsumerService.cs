@@ -1,12 +1,9 @@
 ﻿using Azure.Messaging.ServiceBus;
 using Azure.Messaging.ServiceBus.Administration;
+using AzureEventServiceBus.Events;
 using BasicEventBus.Contracts;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace AzureEventServiceBus
@@ -14,8 +11,6 @@ namespace AzureEventServiceBus
     public class EventConsumerService : IEventConsumerService
     {
         private readonly ServiceBusClient _client;
-        private const string TOPIC_PATH = "mytopic";
-        private const string SUBSCRIPTION_NAME = "mytopicsubscription";
         private List<ServiceBusProcessor> _processors = new List<ServiceBusProcessor>();
         private readonly IServiceProvider _serviceProvider;
         private readonly ServiceBusAdministrationClient _adminClient;
@@ -23,15 +18,13 @@ namespace AzureEventServiceBus
 
         public EventConsumerService(IServiceProvider serviceProvider, IEventBusSubscriptionsManager eventBusSubscriptionsManager)
         {
-            // this can be set from appsettings
-            var connectionString = "";
-            _client = new ServiceBusClient(connectionString);
+            _client = new ServiceBusClient(Constants.ConnectionString);
             this._serviceProvider = serviceProvider;
             _eventBusSubscriptionsManager = eventBusSubscriptionsManager;
-            _adminClient = new ServiceBusAdministrationClient(connectionString);
+            _adminClient = new ServiceBusAdministrationClient(Constants.ConnectionString);
         }
 
-        public async Task StopListenerAsync()
+        public async Task UnSubscribeAsync()
         {
             _processors.ForEach(async p =>
             {
@@ -40,45 +33,86 @@ namespace AzureEventServiceBus
             await _client.DisposeAsync();
         }
 
-        public async Task RegisterBaseEventHandlerAsync(IList<string> names)
+        public async Task RegisterWeekendSubscriptionAsync()
         {
-            if (names == null || !names.Any()) return;
-
             ServiceBusProcessorOptions serviceBusProcessorOptions = new ServiceBusProcessorOptions
             { AutoCompleteMessages = false };
 
-            //foreach (var name in names)
-            //{
-                var processors = _client.CreateProcessor(TOPIC_PATH, SUBSCRIPTION_NAME, serviceBusProcessorOptions);
-                processors.ProcessMessageAsync += ProcessMessagesAsync;
-                processors.ProcessErrorAsync += ProcessErrorAsync;
-                await processors.StartProcessingAsync();
-                _processors.Add(processors);
-            await AddFilters();
-            //}
+            var processors = _client.CreateProcessor(Constants.TopicName, SubscriptionNames.weekend.ToString(), serviceBusProcessorOptions);
+            processors.ProcessMessageAsync += WeekendSubscriptionMessagesAsync;
+            processors.ProcessErrorAsync += ProcessErrorAsync;
+            await processors.StartProcessingAsync();
+            _processors.Add(processors);
+
+            var ruleProperties = await GetRuleProperties(SubscriptionNames.weekend.ToString());
+            await RemoveDefaultFilters(SubscriptionNames.weekend.ToString(), ruleProperties);
+            await AddFilterToWeekend(SubscriptionNames.weekend.ToString(), ruleProperties);
         }
 
-        private async Task AddFilters()
+        public async Task RegisterWeekdaySubscriptionAsync()
+        {
+            ServiceBusProcessorOptions serviceBusProcessorOptions = new ServiceBusProcessorOptions
+            { AutoCompleteMessages = false };
+
+            var processors = _client.CreateProcessor(Constants.TopicName, SubscriptionNames.weekday.ToString(), serviceBusProcessorOptions);
+            processors.ProcessMessageAsync += WeekdaySubscriptionMessagesAsync;
+            processors.ProcessErrorAsync += ProcessErrorAsync;
+            await processors.StartProcessingAsync();
+            _processors.Add(processors);
+            var ruleProperties = await GetRuleProperties(SubscriptionNames.weekday.ToString());
+            await RemoveDefaultFilters(SubscriptionNames.weekday.ToString(), ruleProperties);
+            await AddFilterToWeekday(SubscriptionNames.weekday.ToString(), ruleProperties);
+        }
+
+        private async Task<List<RuleProperties>> GetRuleProperties(string subscriptionName)
         {
             try
             {
-                await RemoveDefaultFilters();
-                var rules = _adminClient.GetRulesAsync(TOPIC_PATH, SUBSCRIPTION_NAME);
-
+                var rules = _adminClient.GetRulesAsync(Constants.TopicName, subscriptionName);
                 var ruleProperties = new List<RuleProperties>();
                 await foreach (var rule in rules) { ruleProperties.Add(rule); }
+                return ruleProperties;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            return null;
+        }
 
-                var customKeyValueFilter = new CorrelationRuleFilter();
-                customKeyValueFilter.ApplicationProperties["Day"] = "Saturday";
+        private async Task AddFilterToWeekend(string subscriptionName, List<RuleProperties> ruleProperties)
+        {
+            //var customKeyValueFilter = new CorrelationRuleFilter();
+            //customKeyValueFilter.ApplicationProperties["Day"] = "Saturday";
 
-                if (!ruleProperties.Any(r => r.Name == "DaysFilter"))
+            CreateRuleOptions createRuleOptions = new CreateRuleOptions
+            {
+                Name = "DaysFilter",
+                Filter = new SqlRuleFilter("Day In ( 'Saturday', 'Sunday')") //customKeyValueFilter
+            };
+            await _adminClient.CreateRuleAsync(Constants.TopicName, subscriptionName, createRuleOptions);
+        }
+
+        private async Task AddFilterToWeekday(string subscriptionName, List<RuleProperties> ruleProperties)
+        {
+            //var customKeyValueFilter = new CorrelationRuleFilter();
+            //customKeyValueFilter.ApplicationProperties["Day"] = "Saturday";
+
+            CreateRuleOptions createRuleOptions = new CreateRuleOptions
+            {
+                Name = "DaysFilter",
+                Filter = new SqlRuleFilter("Day Not In ( 'Saturday', 'Sunday')") //customKeyValueFilter
+            };
+            await _adminClient.CreateRuleAsync(Constants.TopicName, subscriptionName, createRuleOptions);
+        }
+
+        private async Task RemoveDefaultFilters(string subscriptionName, List<RuleProperties> ruleProperties)
+        {
+            try
+            {
+                foreach (var rule in ruleProperties) //CreateRuleOptions.DefaultRuleName
                 {
-                    CreateRuleOptions createRuleOptions = new CreateRuleOptions
-                    {
-                        Name = "DaysFilter",
-                        Filter = customKeyValueFilter // new  SqlRuleFilter("Day = 'Saturday'")
-                    };
-                    await _adminClient.CreateRuleAsync(TOPIC_PATH, SUBSCRIPTION_NAME, createRuleOptions);
+                    await _adminClient.DeleteRuleAsync(Constants.TopicName, subscriptionName, rule.Name);
                 }
             }
             catch (Exception ex)
@@ -87,35 +121,30 @@ namespace AzureEventServiceBus
             }
         }
 
-        private async Task RemoveDefaultFilters()
+        private async Task WeekendSubscriptionMessagesAsync(ProcessMessageEventArgs arg)
         {
-            try
-            {
-                await _adminClient.DeleteRuleAsync(TOPIC_PATH, SUBSCRIPTION_NAME, CreateRuleOptions.DefaultRuleName);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-        }
-
-        private async Task ProcessMessagesAsync(ProcessMessageEventArgs arg)
-        {
-            string jsonString = Encoding.UTF8.GetString(arg.Message.Body);
-            dynamic data = JObject.Parse(jsonString);
-            var eventName = data.EventName?.ToString();
-
-            var messageEventType = _eventBusSubscriptionsManager.GetEventTypeByName(eventName);
-            dynamic deserialized = JsonConvert.DeserializeObject(jsonString, messageEventType);
-
-
-            var handlerTypes = _eventBusSubscriptionsManager.GetHandlersForEvent(eventName);
+            var @event = arg.Message.Body.ToObjectFromJson<TodoTaskCreatedEvent>();
+            var handlerTypes = _eventBusSubscriptionsManager.GetHandlersForEvent(@event.EventName, SubscriptionNames.weekend.ToString());
             foreach (var handlerType in handlerTypes)
             {
                 dynamic handlerInstance = _serviceProvider.GetService(handlerType);
                 // http://techxposer.com/2018/01/03/missing-compiler-required-member-microsoft-csharp-runtimebinder-csharpargumentinfo-create-solved/
                 // https://social.msdn.microsoft.com/Forums/sharepoint/en-US/2b855369-a721-4010-9e33-72d699960994/how-to-fix-missing-compiler-member-error-microsoftcsharpruntimebindercsharpargumentinfocreate?forum=visualstudiogeneral
-                await handlerInstance?.HandleAsync(deserialized);
+                await handlerInstance?.HandleAsync(@event);
+            }
+            await arg.CompleteMessageAsync(arg.Message);
+        }
+
+        private async Task WeekdaySubscriptionMessagesAsync(ProcessMessageEventArgs arg)
+        {
+            var @event = arg.Message.Body.ToObjectFromJson<TodoTaskCreatedEvent>();
+            var handlerTypes = _eventBusSubscriptionsManager.GetHandlersForEvent(@event.EventName, SubscriptionNames.weekday.ToString());
+            foreach (var handlerType in handlerTypes)
+            {
+                dynamic handlerInstance = _serviceProvider.GetService(handlerType);
+                // http://techxposer.com/2018/01/03/missing-compiler-required-member-microsoft-csharp-runtimebinder-csharpargumentinfo-create-solved/
+                // https://social.msdn.microsoft.com/Forums/sharepoint/en-US/2b855369-a721-4010-9e33-72d699960994/how-to-fix-missing-compiler-member-error-microsoftcsharpruntimebindercsharpargumentinfocreate?forum=visualstudiogeneral
+                await handlerInstance?.HandleAsync(@event);
             }
             await arg.CompleteMessageAsync(arg.Message);
         }

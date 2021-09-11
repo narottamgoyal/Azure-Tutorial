@@ -1,7 +1,7 @@
-﻿using BasicEventBus.Contracts;
+﻿using AzureEventServiceBus.Events;
+using BasicEventBus.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using ServiceBusTopicsAPI.Events;
 
 namespace ServiceBusTopicsAPI.Controllers
 {
@@ -19,12 +19,12 @@ namespace ServiceBusTopicsAPI.Controllers
         [HttpPost("{message}/{day}")]
         public IActionResult Post(string message, Days day)
         {
-            eventBusService.Publish<SampleTodoItemEvent, string>(
-                new SampleTodoItemEvent
-                {
-                    Day = day.ToString(),
-                    Message = message,
-                }, "Day", day.ToString());
+            var @event = new TodoTaskCreatedEvent
+            {
+                Day = day.ToString(),
+                Message = message,
+            };
+            eventBusService.Publish(@event);
             return StatusCode(StatusCodes.Status200OK);
         }
     }

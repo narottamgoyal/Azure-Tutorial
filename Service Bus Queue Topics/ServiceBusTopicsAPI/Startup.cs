@@ -1,4 +1,5 @@
 using AzureEventServiceBus;
+using AzureEventServiceBus.Events;
 using BasicEventBus;
 using BasicEventBus.Contracts;
 using Microsoft.AspNetCore.Builder;
@@ -8,9 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json.Converters;
-using ServiceBusTopicsAPI.Events;
 using ServiceBusTopicsAPI.Events.EventHandlers;
-using System.Collections.Generic;
 
 namespace ServiceBusTopicsAPI
 {
@@ -51,7 +50,7 @@ namespace ServiceBusTopicsAPI
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ServiceBusTopicsAPI v1"));
             }
 
-            ConfigureEventBus(app);
+            BindAzureTopicSubscription(app);
 
             app.UseRouting();
 
@@ -70,27 +69,20 @@ namespace ServiceBusTopicsAPI
             services.AddSingleton<IEventBusSubscriptionsManager, EventBusSubscriptionsManager>();
             services.AddSingleton<IEventBusService, EventBusService>();
             services.AddSingleton<IEventConsumerService, EventConsumerService>();
-            services.AddSingleton<IHostedService>(sp =>
-            {
-                var baseEventServiceBus = sp.GetRequiredService<IEventConsumerService>();
-                return new HostedBackgroundService(baseEventServiceBus, GetEventOrQueueNames());
-            });
+            services.AddSingleton<IHostedService, HostedBackgroundService>();
         }
 
-        private void ConfigureEventBus(IApplicationBuilder app)
+        private void BindAzureTopicSubscription(IApplicationBuilder app)
         {
             var eventBus = app.ApplicationServices.GetRequiredService<IEventBusService>();
-            eventBus.Subscribe<SampleTodoItemEvent, SampleDemoEventHandler>();
+            eventBus.Subscribe<TodoTaskCreatedEvent, WeekdaySubscriptionHandler>(SubscriptionNames.weekday.ToString());
+            eventBus.Subscribe<TodoTaskCreatedEvent, WeekendSubscriptionHandler>(SubscriptionNames.weekend.ToString());
         }
 
         public void AddEventHandlers(IServiceCollection services)
         {
-            services.AddTransient<SampleDemoEventHandler>();
-        }
-
-        private List<string> GetEventOrQueueNames()
-        {
-            return new List<string> { typeof(SampleTodoItemEvent).FullName };
+            services.AddTransient<WeekdaySubscriptionHandler>();
+            services.AddTransient<WeekendSubscriptionHandler>();
         }
 
         #endregion Event Consumer

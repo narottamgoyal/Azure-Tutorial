@@ -8,10 +8,10 @@ namespace BasicEventBus.Contracts
     /// </summary>
     public interface IEventBusSubscriptionsManager
     {
-        void AddSubscription<T, TH>() where T : IEvent
+        void AddSubscription<T, TH>(string subscriptionName) where T : IEvent
                                        where TH : IEventHandler<T>;
-        IEnumerable<Type> GetHandlersForEvent<T>() where T : IEvent;
-        IEnumerable<Type> GetHandlersForEvent(string eventName);
+        IEnumerable<Type> GetHandlersForEvent<T>(string subscriptionName) where T : IEvent;
+        IEnumerable<Type> GetHandlersForEvent(string eventName, string subscriptionName);
         Type GetEventTypeByName(string eventName);
 
         //bool IsEmpty { get; }

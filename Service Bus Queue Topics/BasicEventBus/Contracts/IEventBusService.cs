@@ -8,9 +8,8 @@ namespace BasicEventBus.Contracts
     public interface IEventBusService
     {
         Task Publish<T>(T @event) where T : class, IEvent;
-        Task Publish<E, V>(E @event, string key, V value) where E : class, IEvent;
 
-        void Subscribe<T, TH>() where T : IEvent
+        void Subscribe<T, TH>(string subscriptionName) where T : IEvent
                                 where TH : IEventHandler<T>;
 
         //void Unsubscribe<T, TH>() where T : IBaseEvent

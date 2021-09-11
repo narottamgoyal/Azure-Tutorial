@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Hosting;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,22 +10,21 @@ namespace AzureEventServiceBus
     public class HostedBackgroundService : IHostedService
     {
         private readonly IEventConsumerService _serviceBusConsumer;
-        private readonly IList<string> names;
 
-        public HostedBackgroundService(IEventConsumerService serviceBusConsumer, IList<string> names)
+        public HostedBackgroundService(IEventConsumerService serviceBusConsumer)
         {
             _serviceBusConsumer = serviceBusConsumer;
-            this.names = names;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            await _serviceBusConsumer.RegisterBaseEventHandlerAsync(names);
+            await _serviceBusConsumer.RegisterWeekendSubscriptionAsync();
+            await _serviceBusConsumer.RegisterWeekdaySubscriptionAsync();
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
-            await _serviceBusConsumer.StopListenerAsync();
+            await _serviceBusConsumer.UnSubscribeAsync();
         }
     }
 }

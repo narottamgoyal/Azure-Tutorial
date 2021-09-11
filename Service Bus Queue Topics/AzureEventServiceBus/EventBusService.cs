@@ -11,23 +11,21 @@ namespace AzureEventServiceBus
     /// </summary>
     public class EventBusService : IEventBusService
     {
-        private const string TOPIC_PATH = "mytopic";
         private readonly IEventBusSubscriptionsManager _eventBusSubscriptionsManager;
-        private readonly string ConnectionString = "";
         private readonly ServiceBusSender _clientSender;
 
         public EventBusService(IEventBusSubscriptionsManager eventBusSubscriptionsManager)
         {
             this._eventBusSubscriptionsManager = eventBusSubscriptionsManager;
-            var client = new ServiceBusClient(ConnectionString);
-            _clientSender = client.CreateSender(TOPIC_PATH);
+            var client = new ServiceBusClient(Constants.ConnectionString);
+            _clientSender = client.CreateSender(Constants.TopicName);
         }
 
-        public void Subscribe<T, TH>()
+        public void Subscribe<T, TH>(string subscriptionName)
             where T : IEvent
             where TH : IEventHandler<T>
         {
-            _eventBusSubscriptionsManager.AddSubscription<T, TH>();
+            _eventBusSubscriptionsManager.AddSubscription<T, TH>(subscriptionName);
         }
 
         async Task IEventBusService.Publish<T>(T @event)
@@ -36,21 +34,13 @@ namespace AzureEventServiceBus
             {
                 string eventMessage = JsonSerializer.Serialize(@event);
                 ServiceBusMessage message = new ServiceBusMessage(eventMessage);
-                await _clientSender.SendMessageAsync(message);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-        }
 
-        async Task IEventBusService.Publish<E, V>(E @event, string key, V value)
-        {
-            try
-            {
-                string eventMessage = JsonSerializer.Serialize(@event);
-                ServiceBusMessage message = new ServiceBusMessage(eventMessage);
-                message.ApplicationProperties.Add(key, value);
+                foreach (var key in @event.FilterKeys)
+                {
+                    var d = @event.GetType().GetProperty(key).GetValue(@event);
+                    message.ApplicationProperties.Add(key, d);
+                }
+
                 await _clientSender.SendMessageAsync(message);
             }
             catch (Exception ex)

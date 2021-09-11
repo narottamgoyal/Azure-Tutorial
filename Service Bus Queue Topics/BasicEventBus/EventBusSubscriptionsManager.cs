@@ -19,25 +19,30 @@ namespace BasicEventBus
             _eventTypes = new ConcurrentBag<Type>();
         }
 
-        public void AddSubscription<T, TH>()
+        public void AddSubscription<T, TH>(string subscriptionName)
             where T : IEvent
             where TH : IEventHandler<T>
         {
             var eventName = GetEventKey<T>();
 
-            DoAddSubscription(typeof(TH), eventName);
+            DoAddSubscription(typeof(TH), GetHandlerKey(eventName, subscriptionName));
             _eventTypes.Add(typeof(T));
         }
 
-        private void DoAddSubscription(Type handlerType, string eventName)
+        private static string GetHandlerKey(string eventName, string subscriptionName)
         {
-            if (_handlers.ContainsKey(eventName) && _handlers[eventName].Any(s => s == handlerType))
+            return $"{eventName}_{subscriptionName}";
+        }
+
+        private void DoAddSubscription(Type handlerType, string handlerKey)
+        {
+            if (_handlers.ContainsKey(handlerKey) && _handlers[handlerKey].Any(s => s == handlerType))
             {
                 throw new ArgumentException(
-                    $"Handler Type {handlerType.Name} already registered for '{eventName}'", nameof(handlerType));
+                    $"Handler Type {handlerType.Name} already registered for '{handlerKey}'", nameof(handlerType));
             }
 
-            _handlers.AddOrUpdate(eventName,
+            _handlers.AddOrUpdate(handlerKey,
                 x => new List<Type>() { handlerType },
                 (k, v) =>
                 {
@@ -46,12 +51,14 @@ namespace BasicEventBus
                 });
         }
 
-        public IEnumerable<Type> GetHandlersForEvent<T>() where T : IEvent
+        public IEnumerable<Type> GetHandlersForEvent<T>(string subscriptionName) where T : IEvent
         {
-            var key = GetEventKey<T>();
-            return GetHandlersForEvent(key);
+            var eventName = GetEventKey<T>();
+            return GetHandlersForEvent(eventName, subscriptionName);
         }
-        public IEnumerable<Type> GetHandlersForEvent(string eventName) => _handlers[eventName];
+
+        public IEnumerable<Type> GetHandlersForEvent(string eventName, string subscriptionName)
+            => _handlers[GetHandlerKey(eventName, subscriptionName)];
 
         public Type GetEventTypeByName(string eventName) => _eventTypes.SingleOrDefault(t => t.Name == eventName);
 
