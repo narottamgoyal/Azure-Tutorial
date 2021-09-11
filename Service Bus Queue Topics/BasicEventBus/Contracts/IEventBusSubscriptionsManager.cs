@@ -13,15 +13,5 @@ namespace BasicEventBus.Contracts
         IEnumerable<Type> GetHandlersForEvent<T>(string subscriptionName) where T : IEvent;
         IEnumerable<Type> GetHandlersForEvent(string eventName, string subscriptionName);
         Type GetEventTypeByName(string eventName);
-
-        //bool IsEmpty { get; }
-        //event EventHandler<string> OnEventRemoved;
-        //void RemoveSubscription<T, TH>() where TH : IBaseEventHandler<T>
-        //                                    where T : IBaseEvent;
-        //bool HasSubscriptionsForEvent<T>() where T : IBaseEvent;
-        //bool HasSubscriptionsForEvent(string eventName);
-        //void Clear();
-
-        //string GetEventKey<T>();
     }
 }

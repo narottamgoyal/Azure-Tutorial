@@ -11,8 +11,5 @@ namespace BasicEventBus.Contracts
 
         void Subscribe<T, TH>(string subscriptionName) where T : IEvent
                                 where TH : IEventHandler<T>;
-
-        //void Unsubscribe<T, TH>() where T : IBaseEvent
-        //                          where TH : IBaseEventHandler<T>;
     }
 }
