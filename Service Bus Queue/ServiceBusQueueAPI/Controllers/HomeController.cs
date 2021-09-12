@@ -16,11 +16,11 @@ namespace ServiceBusQueueAPI.Controllers
             this.eventBusService = eventPublisherService;
         }
 
-        [HttpPost("username")]
+        [HttpPost("message")]
         public IActionResult Post(string message)
         {
-            eventBusService.Publish<SampleDemoEvent>(
-                new SampleDemoEvent
+            eventBusService.Publish<SampleDemo1Event>(
+                new SampleDemo1Event
                 {
                     Message = message
                 });

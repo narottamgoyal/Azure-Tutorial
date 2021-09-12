@@ -3,14 +3,14 @@ using System.Threading.Tasks;
 
 namespace ServiceBusQueueAPI.Events.EventHandlers
 {
-    public class SampleDemoEventHandler : IEventHandler<SampleDemoEvent>
+    public class SampleDemo1EventHandler : IEventHandler<SampleDemo1Event>
     {
-        public SampleDemoEventHandler()
+        public SampleDemo1EventHandler()
         {
 
         }
 
-        public Task HandleAsync(SampleDemoEvent @event)
+        public Task HandleAsync(SampleDemo1Event @event)
         {
             return Task.CompletedTask;
         }

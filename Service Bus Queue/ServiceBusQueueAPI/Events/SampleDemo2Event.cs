@@ -2,9 +2,9 @@
 
 namespace ServiceBusQueueAPI.Events
 {
-    public class SampleDemoEvent : IEvent
+    public class SampleDemo2Event : IEvent
     {
-        public SampleDemoEvent()
+        public SampleDemo2Event()
         {
             EventName = GetType().Name;
         }

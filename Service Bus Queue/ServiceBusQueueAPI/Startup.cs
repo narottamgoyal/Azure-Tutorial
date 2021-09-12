@@ -74,17 +74,23 @@ namespace ServiceBusQueueAPI
         private void ConfigureEventBus(IApplicationBuilder app)
         {
             var eventBus = app.ApplicationServices.GetRequiredService<IEventBusService>();
-            eventBus.Subscribe<SampleDemoEvent, SampleDemoEventHandler>();
+            //eventBus.Subscribe<SampleDemo1Event, SampleDemo1EventHandler>();
+            eventBus.Subscribe<SampleDemo2Event, SampleDemo2EventHandler>();
         }
 
         public void AddEventHandlers(IServiceCollection services)
         {
-            services.AddTransient<SampleDemoEventHandler>();
+            services.AddTransient<SampleDemo1EventHandler>();
+            services.AddTransient<SampleDemo2EventHandler>();
         }
 
         private List<string> GetEventOrQueueNames()
         {
-            return new List<string> { typeof(SampleDemoEvent).FullName };
+            return new List<string>
+            {
+                typeof(SampleDemo1Event).FullName,
+                typeof(SampleDemo2Event).FullName
+            };
         }
 
         #endregion Event Consumer
