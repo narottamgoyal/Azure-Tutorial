@@ -2,7 +2,7 @@
 using Azure.Security.KeyVault.Secrets;
 using Microsoft.Extensions.Configuration;
 
-namespace ServiceBusQueueAPI.AzureVoltConfiguration
+namespace ServiceBusQueueAPI.AzureVaultConfiguration
 {
     /// <summary>
     /// https://docs.microsoft.com/en-us/aspnet/core/security/key-vault-configuration?view=aspnetcore-5.0#use-a-key-name-prefix

@@ -12,10 +12,11 @@ namespace ServiceBusQueueAPI.Events
 
     public class EventBusService : IEventBusService
     {
-        private readonly string ConnectionString = "";
+        private readonly string ConnectionString;
 
-        public EventBusService()
+        public EventBusService(string connectionString)
         {
+            ConnectionString = connectionString;
         }
 
         public async Task Publish<T>(T eventMessage)

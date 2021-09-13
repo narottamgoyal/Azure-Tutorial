@@ -31,8 +31,11 @@ namespace ServiceBusQueueAPI
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ServiceBusQueueAPI", Version = "v1" });
             });
 
-            var dd = Configuration.GetSection("Configuration:ConnectionString").Value;
-            services.AddSingleton<IEventBusService, EventBusService>();
+            services.AddSingleton<IEventBusService>(ServiceProvider =>
+            {
+                var connectionString = Configuration.GetSection("Configuration:ConnectionString").Value;
+                return new EventBusService(connectionString);
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
