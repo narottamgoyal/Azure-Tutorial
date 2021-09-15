@@ -1,13 +1,13 @@
-﻿using Azure.Extensions.AspNetCore.Configuration.Secrets;
-using Azure.Security.KeyVault.Secrets;
+﻿using Microsoft.Azure.KeyVault.Models;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.AzureKeyVault;
 
 namespace ServiceBusQueueAPI.AzureVaultConfiguration
 {
     /// <summary>
     /// https://docs.microsoft.com/en-us/aspnet/core/security/key-vault-configuration?view=aspnetcore-5.0#use-a-key-name-prefix
     /// </summary>
-    public class PrefixKeyVaultSecretManager : KeyVaultSecretManager
+    public class PrefixKeyVaultSecretManager : IKeyVaultSecretManager
     {
         private readonly string _prefix;
 
@@ -16,16 +16,27 @@ namespace ServiceBusQueueAPI.AzureVaultConfiguration
             _prefix = $"{prefix}-";
         }
 
-        public override bool Load(SecretProperties secret)
+        public string GetKey(SecretBundle secret)
         {
-            return secret.Name.StartsWith(_prefix);
-        }
-
-        public override string GetKey(KeyVaultSecret secret)
-        {
-            return secret.Name
-                .Substring(_prefix.Length)
+            return secret.SecretIdentifier.Name
+              .Substring(_prefix.Length)
                 .Replace("--", ConfigurationPath.KeyDelimiter);
         }
+        public bool Load(SecretItem secret)
+        {
+            return secret.Identifier.Name.StartsWith(_prefix);
+        }
+
+        //public override bool Load(SecretProperties secret)
+        //{
+        //    return secret.Name.StartsWith(_prefix);
+        //}
+
+        //public override string GetKey(KeyVaultSecret secret)
+        //{
+        //    return secret.Name
+        //        .Substring(_prefix.Length)
+        //        .Replace("--", ConfigurationPath.KeyDelimiter);
+        //}
     }
 }
