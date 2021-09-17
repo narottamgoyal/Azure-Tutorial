@@ -18,25 +18,15 @@ namespace ServiceBusQueueAPI.AzureVaultConfiguration
 
         public string GetKey(SecretBundle secret)
         {
-            return secret.SecretIdentifier.Name
-              .Substring(_prefix.Length)
-                .Replace("--", ConfigurationPath.KeyDelimiter);
+            return secret.SecretIdentifier
+                         .Name
+                         .Substring(_prefix.Length)
+                         .Replace("--", ConfigurationPath.KeyDelimiter);
         }
+
         public bool Load(SecretItem secret)
         {
             return secret.Identifier.Name.StartsWith(_prefix);
         }
-
-        //public override bool Load(SecretProperties secret)
-        //{
-        //    return secret.Name.StartsWith(_prefix);
-        //}
-
-        //public override string GetKey(KeyVaultSecret secret)
-        //{
-        //    return secret.Name
-        //        .Substring(_prefix.Length)
-        //        .Replace("--", ConfigurationPath.KeyDelimiter);
-        //}
     }
 }
